@@ -90,7 +90,7 @@ def check_account_balance():
         print(f"Your account balance is ₹{accounts[account_number]} 😎")
         
 check_account_balance()
-
+ 
 # Task 5:
 def create_password():
     print("Its time to make your account more secure!😊")
@@ -108,6 +108,39 @@ def create_password():
             break
 
 create_password()
+
+# Task 6:
+def track_transactions():
+    # We will create a list of Dictionaries
+    transactions = []
+    while True:
+        
+        choice = int(input("""Enter your choice:
+1. Deposit
+2. Withdraw
+3. Exit
+"""))
+        if choice == 1:
+            deposit_amount = int(input("Enter deposit amount: "))
+            transactions.append({'Transaction Type': 'Deposit', 'Amount': deposit_amount})
+
+        elif choice == 2:
+            withdrawal_amount = int(input("Enter withdrawal amount: "))
+            transactions.append({'Transaction Type': 'Withdraw', 'Amount': withdrawal_amount})
+
+        elif choice == 3:
+            break
+
+    print(transactions)
+
+track_transactions()
+
+
+
+
+
+
+
 
 
 
