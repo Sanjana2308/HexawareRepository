@@ -1,6 +1,23 @@
 from abc import ABC, abstractmethod
 import re
 
+# Task 12: Exception Handling
+
+class InsufficientFundException(Exception):
+    def __init__(self, message="Insufficient funds in the account"):
+        self.message = message
+        super().__init__(self.message)
+
+class InvalidAccountException(Exception):
+    def __init__(self, message="Invalid account number"):
+        self.message = message
+        super().__init__(self.message)
+
+class OverDraftLimitExcededException(Exception):
+    def __init__(self, message="Overdraft limit exceeded"):
+        self.message = message
+        super().__init__(self.message)
+
 # Task 7: Class & Object
 
 class Customer:
@@ -127,7 +144,7 @@ class SavingsAccount(Account):
             self.balance -= amount
             print(f"Withdrew {amount}. New Balance: {self.balance}")
         else:
-            print("Insufficient balance")
+            raise InsufficientFundException()
 
     def calculate_interest(self):
         interest = self.balance * self.interest_rate / 100
@@ -145,11 +162,14 @@ class CurrentAccount(Account):
         print(f"Deposited {amount}. New Balance: {self.balance}")
 
     def withdraw(self, amount):
-        if self.balance + CurrentAccount.OVERDRAFT_LIMIT >= amount:
+        if self.balance >= amount:
+            self.balance -= amount
+            print(f"Withdrew {amount}. New Balance: {self.balance}")
+        elif self.balance + CurrentAccount.OVERDRAFT_LIMIT >= amount:
             self.balance -= amount
             print(f"Withdrew {amount}. New Balance: {self.balance}")
         else:
-            print("Overdraft limit exceeded")
+            raise OverDraftLimitExcededException()
 
     def calculate_interest(self):
         print("Current accounts do not accrue interest")
@@ -206,7 +226,7 @@ class SavingsAccountBA(BankAccount):
             self.balance -= amount
             print(f"Withdrew {amount}. New Balance: {self.balance}")
         else:
-            print("Insufficient balance")
+            raise InsufficientFundException()
 
     def calculate_interest(self):
         interest = self.balance * self.interest_rate / 100
@@ -224,11 +244,14 @@ class CurrentAccountBA(BankAccount):
         print(f"Deposited {amount}. New Balance: {self.balance}")
 
     def withdraw(self, amount):
-        if self.balance + CurrentAccountBA.OVERDRAFT_LIMIT >= amount:
+        if self.balance >= amount:
+            self.balance -= amount
+            print(f"Withdrew {amount}. New Balance: {self.balance}")
+        elif self.balance + CurrentAccountBA.OVERDRAFT_LIMIT >= amount:
             self.balance -= amount
             print(f"Withdrew {amount}. New Balance: {self.balance}")
         else:
-            print("Overdraft limit exceeded")
+            raise OverDraftLimitExcededException()
 
     def calculate_interest(self):
         print("Current accounts do not accrue interest")
@@ -278,8 +301,7 @@ class CustomerServiceProviderImpl(ICustomerServiceProvider):
         if account:
             return account.get_balance()
         else:
-            print("Account not found")
-            return None
+            raise InvalidAccountException()
 
     def deposit(self, account_number, amount):
         account = self.accounts.get(account_number)
@@ -287,8 +309,7 @@ class CustomerServiceProviderImpl(ICustomerServiceProvider):
             account.deposit(amount)
             return account.get_balance()
         else:
-            print("Account not found")
-            return None
+            raise InvalidAccountException()
 
     def withdraw(self, account_number, amount):
         account = self.accounts.get(account_number)
@@ -296,28 +317,27 @@ class CustomerServiceProviderImpl(ICustomerServiceProvider):
             account.withdraw(amount)
             return account.get_balance()
         else:
-            print("Account not found")
-            return None
+            raise InvalidAccountException()
 
     def transfer(self, from_account_number, to_account_number, amount):
         from_account = self.accounts.get(from_account_number)
         to_account = self.accounts.get(to_account_number)
-        if from_account and to_account:
-            if from_account.get_balance() >= amount:
-                from_account.withdraw(amount)
-                to_account.deposit(amount)
-                print(f"Transferred {amount} from {from_account_number} to {to_account_number}")
-            else:
-                print("Insufficient balance for transfer")
-        else:
-            print("One or both accounts not found")
+        if not from_account:
+            raise InvalidAccountException("Invalid from-account number")
+        if not to_account:
+            raise InvalidAccountException("Invalid to-account number")
+        if from_account.get_balance() < amount:
+            raise InsufficientFundException()
+        from_account.withdraw(amount)
+        to_account.deposit(amount)
+        print(f"Transferred {amount} from account {from_account_number} to account {to_account_number}")
 
     def get_account_details(self, account_number):
         account = self.accounts.get(account_number)
         if account:
             account.print_info()
         else:
-            print("Account not found")
+            raise InvalidAccountException()
 
 class BankServiceProviderImpl(CustomerServiceProviderImpl, IBankServiceProvider):
     def __init__(self, branch_name, branch_address):
@@ -351,38 +371,49 @@ class BankApp:
 
     def run(self):
         while True:
-            print("\nBanking System Menu:")
-            print("1. Create Account")
-            print("2. Deposit")
-            print("3. Withdraw")
-            print("4. Get Balance")
-            print("5. Transfer")
-            print("6. Get Account Details")
-            print("7. List Accounts")
-            print("8. Calculate Interest")
-            print("9. Exit")
-            choice = input("Enter your choice: ")
-            if choice == "1":
-                self.create_account()
-            elif choice == "2":
-                self.deposit()
-            elif choice == "3":
-                self.withdraw()
-            elif choice == "4":
-                self.get_balance()
-            elif choice == "5":
-                self.transfer()
-            elif choice == "6":
-                self.get_account_details()
-            elif choice == "7":
-                self.list_accounts()
-            elif choice == "8":
-                self.calculate_interest()
-            elif choice == "9":
-                print("Exiting the system. Goodbye!")
-                break
-            else:
-                print("Invalid choice. Please try again.")
+            try:
+                print("\nBanking System Menu:")
+                print("1. Create Account")
+                print("2. Deposit")
+                print("3. Withdraw")
+                print("4. Get Balance")
+                print("5. Transfer")
+                print("6. Get Account Details")
+                print("7. List Accounts")
+                print("8. Calculate Interest")
+                print("9. Exit")
+                choice = input("Enter your choice: ")
+                if choice == "1":
+                    self.create_account()
+                elif choice == "2":
+                    self.deposit()
+                elif choice == "3":
+                    self.withdraw()
+                elif choice == "4":
+                    self.get_balance()
+                elif choice == "5":
+                    self.transfer()
+                elif choice == "6":
+                    self.get_account_details()
+                elif choice == "7":
+                    self.list_accounts()
+                elif choice == "8":
+                    self.calculate_interest()
+                elif choice == "9":
+                    print("Exiting the system. Goodbye!")
+                    break
+                else:
+                    print("Invalid choice. Please try again.")
+            except InvalidAccountException as e:
+                print(e)
+            except InsufficientFundException as e:
+                print(e)
+            except OverDraftLimitExcededException as e:
+                print(e)
+            except ValueError as e:
+                print(e)
+            except Exception as e:
+                print("An unexpected error occurred:", e)
 
     def create_account(self):
         print("Creating Account")
